@@ -14,7 +14,7 @@ class Http;
 class Duet : public PrintHost
 {
 public:
-	Duet(DynamicPrintConfig *config);
+    explicit Duet(DynamicPrintConfig *config);
 	~Duet() override = default;
 
 	const char* get_name() const override;
@@ -33,16 +33,17 @@ public:
     bool get_printers(wxArrayString &printers) const override { return false; }
     
 private:
+	enum class ConnectionType { rrf, dsf, error };
 	std::string host;
 	std::string password;
 
-	std::string get_upload_url(const std::string &filename) const;
-	std::string get_connect_url() const;
+	std::string get_upload_url(const std::string &filename, ConnectionType connectionType) const;
+	std::string get_connect_url(const bool dsfUrl) const;
 	std::string get_base_url() const;
 	std::string timestamp_str() const;
-	bool connect(wxString &msg) const;
-	void disconnect() const;
-	bool start_print(wxString &msg, const std::string &filename) const;
+	ConnectionType connect(wxString &msg) const;
+	void disconnect(ConnectionType connectionType) const;
+	bool start_print(wxString &msg, const std::string &filename, ConnectionType connectionType) const;
 	int get_err_code_from_body(const std::string &body) const;
 };
 

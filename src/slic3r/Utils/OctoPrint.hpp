@@ -6,6 +6,7 @@
 #include <boost/optional.hpp>
 
 #include "PrintHost.hpp"
+#include "libslic3r/PrintConfig.hpp"
 
 
 namespace Slic3r {
@@ -30,8 +31,13 @@ public:
     bool can_start_print() const override { return true; }
     bool can_support_multiple_printers() const override { return false; }
     std::string get_host() const override { return host; }
+<<<<<<< HEAD
     bool get_groups(wxArrayString &groups) const override { return false; }
     bool get_printers(wxArrayString &printers) const override { return false; }
+=======
+    const std::string& get_apikey() const { return apikey; }
+    const std::string& get_cafile() const { return cafile; }
+>>>>>>> master
 
 protected:
     virtual bool validate_version_text(const boost::optional<std::string> &version_text) const;
@@ -41,14 +47,14 @@ private:
     std::string apikey;
     std::string cafile;
 
-    void set_auth(Http &http) const;
+    virtual void set_auth(Http &http) const;
     std::string make_url(const std::string &path) const;
 };
 
 class SL1Host: public OctoPrint
 {
 public:
-    SL1Host(DynamicPrintConfig *config) : OctoPrint(config) {}
+    SL1Host(DynamicPrintConfig *config);
     ~SL1Host() override = default;
 
     const char* get_name() const override;
@@ -59,6 +65,15 @@ public:
 
 protected:
     bool validate_version_text(const boost::optional<std::string> &version_text) const override;
+
+private:
+    void set_auth(Http &http) const override;
+
+    // Host authorization type.
+    AuthorizationType authorization_type;
+    // username and password for HTTP Digest Authentization (RFC RFC2617)
+    std::string username;
+    std::string password;
 };
 
 }
