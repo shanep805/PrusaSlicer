@@ -200,7 +200,8 @@ bool Repetier::get_groups(wxArrayString& groups) const
                     if (v.second.data() == "#") {
                         groups.push_back(_utf8(L("Default")));
                     } else {
-                        groups.push_back(v.second.data());
+                        // Is it safe to assume that the data are utf-8 encoded?
+                        groups.push_back(wxString::FromUTF8(v.second.data()));
                     }
                 }
             }
@@ -226,7 +227,6 @@ bool Repetier::get_printers(wxArrayString& printers) const
     auto http = Http::get(std::move(url));
     set_auth(http);
     
-    auto &slugs = printers;
     http.on_error([&](std::string body, std::string error, unsigned status) {
             BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error listing printers: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
             res = false;
@@ -245,10 +245,8 @@ bool Repetier::get_printers(wxArrayString& printers) const
                 } else {
                     BOOST_FOREACH(boost::property_tree::ptree::value_type &v, ptree.get_child("data.")) {
                         const auto slug = v.second.get<std::string>("slug");
-                        printers.push_back(slug);
+                        printers.push_back(Slic3r::GUI::from_u8(slug));
                     }
-                    
-                    //res = !printers.empty();
                 }
             }
             catch (const std::exception &) {

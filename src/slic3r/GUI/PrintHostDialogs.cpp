@@ -30,7 +30,7 @@ static const char *CONFIG_KEY_PATH  = "printhost_path";
 static const char *CONFIG_KEY_PRINT = "printhost_print";
 static const char *CONFIG_KEY_GROUP = "printhost_group";
 
-PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, bool can_start_print, wxArrayString& groups)
+PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, bool can_start_print, const wxArrayString &groups)
     : MsgDialog(nullptr, _(L("Send G-Code to printer host")), _(L("Upload to Printer Host with the following filename:")), wxID_NONE)
     , txt_filename(new wxTextCtrl(this, wxID_ANY))
     , box_print(can_start_print ? new wxCheckBox(this, wxID_ANY, _(L("Start printing after upload"))) : nullptr)

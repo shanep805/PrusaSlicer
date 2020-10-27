@@ -263,9 +263,8 @@ void PhysicalPrinterDialog::update_printers()
         rs->disable();
     } else {
         std::vector<std::string> slugs;
-        for (int i = 0; i < printers.size(); i++) {
-            slugs.push_back(printers[i].ToStdString());
-        }
+        for (size_t i = 0; i < printers.size(); i++)
+            slugs.push_back(printers[i].ToUTF8().data());
 
         Choice *choice = dynamic_cast<Choice *>(rs);
         choice->set_values(slugs);
