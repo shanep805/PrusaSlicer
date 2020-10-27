@@ -1619,7 +1619,7 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
     // Append full config.
     _write(file, "\n");
     {
-        std::string full_config = "";
+        std::string full_config;
         append_full_config(print, full_config);
         if (!full_config.empty())
             _write(file, full_config);
@@ -2475,10 +2475,10 @@ void GCode::append_full_config(const Print &print, std::string &str)
     static constexpr auto banned_keys = {
         "compatible_printers"sv,
         "compatible_prints"sv,
+        //FIXME The print host keys should not be exported to full_print_config anymore. The following keys may likely be removed.
         "print_host"sv,
         "printhost_apikey"sv,
-        "printhost_cafile"sv,
-        "printhost_slug"sv
+        "printhost_cafile"sv
     };
     assert(std::is_sorted(banned_keys.begin(), banned_keys.end()));
     auto is_banned = [](const std::string &key) {

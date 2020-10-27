@@ -1819,8 +1819,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     , main_frame(main_frame)
     , config(Slic3r::DynamicPrintConfig::new_from_defaults_keys({
         "bed_shape", "bed_custom_texture", "bed_custom_model", "complete_objects", "duplicate_distance", "extruder_clearance_radius", "skirts", "skirt_distance",
-        "brim_width", "variable_layer_height", "serial_port", "serial_speed", "host_type", "print_host",
-        "printhost_apikey", "printhost_cafile", "printhost_slug", "nozzle_diameter", "single_extruder_multi_material",
+        "brim_width", "variable_layer_height", "nozzle_diameter", "single_extruder_multi_material",
         "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle",
         "extruder_colour", "filament_colour", "max_print_height", "printer_model", "printer_technology",
         // These values are necessary to construct SlicingParameters by the Canvas3D variable layer height editor.
@@ -4291,11 +4290,8 @@ void Plater::priv::show_action_buttons(const bool ready_to_slice) const
     wxWindowUpdateLocker noUpdater(sidebar);
 
     DynamicPrintConfig* selected_printer_config = wxGetApp().preset_bundle->physical_printers.get_selected_printer_config();
-    if (!selected_printer_config)
-        selected_printer_config = config;
-
-    const auto prin_host_opt = selected_printer_config->option<ConfigOptionString>("print_host");
-    const bool send_gcode_shown = prin_host_opt != nullptr && !prin_host_opt->value.empty();
+    const auto print_host_opt = selected_printer_config ? selected_printer_config->option<ConfigOptionString>("print_host") : nullptr;
+    const bool send_gcode_shown = print_host_opt != nullptr && !print_host_opt->value.empty();
     
     // when a background processing is ON, export_btn and/or send_btn are showing
     if (wxGetApp().app_config->get("background_processing") == "1")

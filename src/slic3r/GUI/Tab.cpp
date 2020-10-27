@@ -2672,29 +2672,6 @@ void TabPrinter::clear_pages()
     m_reset_to_filament_color = nullptr;
 }
 
-/*
-ys_FIXME, lm_FIXME: Where to put this? Related to merging PR 4384 (Repetier integration).
-    {
-        // This part was in original PS code. It was probably removed by mistake
-        // in the meantime.
-        std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
-        m_print_host_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
-        m_printhost_browse_btn->Enable(host->has_auto_discovery());
-
-        // This was added in the PR
-        m_printhost_slug_browse_btn->Enable(host->can_support_multiple_printers());
-
-        Field *rs = get_field("printhost_slug");
-        if (host->can_support_multiple_printers()) {
-            update_printers();
-            rs->enable();
-        } else {
-            rs->disable();
-        }
-    }
-*/
-
-
 void TabPrinter::toggle_options()
 {
     if (!m_active_page || m_presets->get_edited_preset().printer_technology() == ptSLA)

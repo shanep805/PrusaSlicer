@@ -50,6 +50,7 @@ public:
     virtual std::string get_host() const = 0;
 
     // Support for Repetier server multiple groups & printers. Not supported by other print hosts.
+    // Returns false if not supported. May throw HostNetworkError.
     virtual bool get_groups(wxArrayString & /* groups */) const { return false; }
     virtual bool get_printers(wxArrayString & /* printers */) const { return false; }
 

@@ -12,6 +12,7 @@
 
 #include <wx/progdlg.h>
 
+
 #include "libslic3r/PrintConfig.hpp"
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/GUI/GUI.hpp"
@@ -231,26 +232,27 @@ bool Repetier::get_printers(wxArrayString& printers) const
             BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Error listing printers: %2%, HTTP %3%, body: `%4%`") % name % error % status % body;
             res = false;
         })
-        .on_complete([&, this](std::string body, unsigned) {
-            BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got printers: %2%") % name % body;
+        .on_complete([&, this](std::string body, unsigned http_status) {
+            BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got printers: %2%, HTTP status: %3%") % name % body % http_status;
+            
+            if (http_status != 200)
+                throw HostNetworkError(GUI::format(_L("HTTP status: %1%\nMessage body: \"%2%\""), http_status, body));
 
+            std::stringstream ss(body);
+            pt::ptree ptree;
             try {
-                std::stringstream ss(body);
-                pt::ptree ptree;
                 pt::read_json(ss, ptree);
-                
-                const auto error = ptree.get_optional<std::string>("error");
-                if (error) {
-                    res = false;
-                } else {
-                    BOOST_FOREACH(boost::property_tree::ptree::value_type &v, ptree.get_child("data.")) {
-                        const auto slug = v.second.get<std::string>("slug");
-                        printers.push_back(Slic3r::GUI::from_u8(slug));
-                    }
-                }
+            } catch (const pt::ptree_error &err) {
+                throw HostNetworkError(GUI::format(_L("Parsing of host response failed.\nMessage body: \"%1%\"\nError: \"%2%\""), body, err.what()));
             }
-            catch (const std::exception &) {
-                res = false;
+            
+            const auto error = ptree.get_optional<std::string>("error");
+            if (error)
+                throw HostNetworkError(*error);
+
+            BOOST_FOREACH(boost::property_tree::ptree::value_type &v, ptree.get_child("data.")) {
+                const auto slug = v.second.get<std::string>("slug");
+                printers.push_back(Slic3r::GUI::from_u8(slug));
             }
         })
         .perform_sync();

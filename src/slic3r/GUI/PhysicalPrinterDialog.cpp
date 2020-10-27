@@ -155,6 +155,28 @@ void PresetForPrinter::msw_rescale()
 //          PhysicalPrinterDialog
 //------------------------------------------
 
+/*
+ys_FIXME, lm_FIXME: Where to put this? Related to merging PR 4384 (Repetier integration).
+    {
+        // This part was in original PS code. It was probably removed by mistake
+        // in the meantime.
+        std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
+        m_print_host_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
+        m_printhost_browse_btn->Enable(host->has_auto_discovery());
+
+        // This was added in the PR
+        m_printhost_slug_browse_btn->Enable(host->can_support_multiple_printers());
+
+        Field *rs = get_field("printhost_slug");
+        if (host->can_support_multiple_printers()) {
+            update_printers();
+            rs->enable();
+        } else {
+            rs->disable();
+        }
+    }
+*/
+
 PhysicalPrinterDialog::PhysicalPrinterDialog(wxString printer_name) : 
     DPIDialog(NULL, wxID_ANY, _L("Physical Printer"), wxDefaultPosition, wxSize(45 * wxGetApp().em_unit(), -1), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
     m_printer("", wxGetApp().preset_bundle->physical_printers.default_config())
@@ -250,27 +272,22 @@ PhysicalPrinterDialog::~PhysicalPrinterDialog()
 
 void PhysicalPrinterDialog::update_printers()
 {
+    wxBusyCursor wait;
+
     std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
 
     wxArrayString printers;
     Field *rs = m_optgroup->get_field("printhost_slug");
-    if (host->get_printers(printers)) {
-        std::vector<std::string> slugs;
-
-        Choice *choice = dynamic_cast<Choice *>(rs);
-        choice->set_values(slugs);
-
-        rs->disable();
-    } else {
-        std::vector<std::string> slugs;
-        for (size_t i = 0; i < printers.size(); i++)
-            slugs.push_back(printers[i].ToUTF8().data());
-
-        Choice *choice = dynamic_cast<Choice *>(rs);
-        choice->set_values(slugs);
-
-        rs->enable();
+    try {
+        if (! host->get_printers(printers))
+            printers.clear();
+    } catch (const HostNetworkError &err) {
+        printers.clear();
+        show_error(this, _L("Querying printers connected to a print host failed.") + "\n\n" + from_u8(err.what()));
     }
+    Choice *choice = dynamic_cast<Choice*>(rs);
+    choice->set_values(printers);
+    printers.empty() ? rs->disable() : rs->enable();
 }
 
 void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgroup)
@@ -316,12 +333,16 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
                 return;
             }
             wxString msg;
-            if (host->test(msg)) {
+            bool result;
+            {
+                // Show a wait cursor during the connection test, as it is blocking UI.
+                wxBusyCursor wait;
+                result = host->test(msg);
+            }
+            if (result)
                 show_info(this, host->get_test_ok_msg(), _L("Success!"));
-            }
-            else {
+            else
                 show_error(this, host->get_test_failed_msg(msg));
-            }
             });
 
         return sizer;
@@ -441,7 +462,7 @@ void PhysicalPrinterDialog::update()
         AuthorizationType auth_type = m_config->option<ConfigOptionEnum<AuthorizationType>>("printhost_authorization_type")->value;
         m_optgroup->show_field("printhost_apikey", auth_type == AuthorizationType::atKeyPassword);
 
-        for (const std::string& opt_key : std::vector<std::string>{ "printhost_user", "printhost_password" })
+        for (const const char *opt_key : { "printhost_user", "printhost_password" })
             m_optgroup->show_field(opt_key, auth_type == AuthorizationType::atUserPassword);
     }
 
