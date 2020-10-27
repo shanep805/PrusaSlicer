@@ -248,6 +248,32 @@ PhysicalPrinterDialog::~PhysicalPrinterDialog()
     }
 }
 
+void PhysicalPrinterDialog::update_printers()
+{
+    std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
+
+    wxArrayString printers;
+    Field *rs = m_optgroup->get_field("printhost_slug");
+    if (host->get_printers(printers)) {
+        std::vector<std::string> slugs;
+
+        Choice *choice = dynamic_cast<Choice *>(rs);
+        choice->set_values(slugs);
+
+        rs->disable();
+    } else {
+        std::vector<std::string> slugs;
+        for (int i = 0; i < printers.size(); i++) {
+            slugs.push_back(printers[i].ToStdString());
+        }
+
+        Choice *choice = dynamic_cast<Choice *>(rs);
+        choice->set_values(slugs);
+
+        rs->enable();
+    }
+}
+
 void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgroup)
 {
     m_optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
@@ -302,6 +328,15 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
         return sizer;
     };
 
+    auto print_host_printers = [this, create_sizer_with_btn](wxWindow* parent) {
+        //add_scaled_button(parent, &m_printhost_slug_browse_btn, "browse", _(L("Refresh Printers")), wxBU_LEFT | wxBU_EXACTFIT);
+        auto sizer = create_sizer_with_btn(parent, &m_printhost_slug_browse_btn, "browse", _(L("Refresh Printers")));
+        ScalableButton* btn = m_printhost_slug_browse_btn;
+        btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
+        btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent e) { update_printers(); });
+        return sizer;
+    };
+
     // Set a wider width for a better alignment
     Option option = m_optgroup->get_option("print_host");
     option.opt.width = Field::def_width_wider();
@@ -315,6 +350,12 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     option = m_optgroup->get_option("printhost_apikey");
     option.opt.width = Field::def_width_wider();
     m_optgroup->append_single_option_line(option);
+
+    option = m_optgroup->get_option("printhost_slug");
+    option.opt.width = Field::def_width_wider();
+    Line slug_line = m_optgroup->create_single_option_line(option);
+    slug_line.append_widget(print_host_printers);
+    m_optgroup->append_line(slug_line);
 
     const auto ca_file_hint = _u8L("HTTPS CA file is optional. It is only needed if you use HTTPS with a self-signed certificate.");
 

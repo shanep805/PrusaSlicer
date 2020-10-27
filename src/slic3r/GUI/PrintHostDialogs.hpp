@@ -15,6 +15,7 @@
 
 class wxButton;
 class wxTextCtrl;
+class wxComboBox;
 class wxCheckBox;
 class wxDataViewListCtrl;
 

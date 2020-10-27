@@ -2472,24 +2472,14 @@ void GCode::append_full_config(const Print &print, std::string &str)
 {
     const DynamicPrintConfig &cfg = print.full_print_config();
     // Sorted list of config keys, which shall not be stored into the G-code. Initializer list.
-<<<<<<< HEAD
-	static constexpr auto banned_keys = { 
-		"compatible_printers"sv,
-		"compatible_prints"sv,
-		"print_host"sv,
-		"printhost_apikey"sv,
-		"printhost_cafile"sv,
-        "printhost_slug"sv
-	};
-=======
     static constexpr auto banned_keys = {
         "compatible_printers"sv,
         "compatible_prints"sv,
         "print_host"sv,
         "printhost_apikey"sv,
-        "printhost_cafile"sv
+        "printhost_cafile"sv,
+        "printhost_slug"sv
     };
->>>>>>> master
     assert(std::is_sorted(banned_keys.begin(), banned_keys.end()));
     auto is_banned = [](const std::string &key) {
         return std::binary_search(banned_keys.begin(), banned_keys.end(), key);

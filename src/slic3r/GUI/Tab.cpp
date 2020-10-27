@@ -2008,153 +2008,6 @@ bool Tab::current_preset_is_dirty()
     return m_presets->current_is_dirty();
 }
 
-<<<<<<< HEAD
-void TabPrinter::build_printhost(ConfigOptionsGroup *optgroup)
-{
-    const PrinterTechnology tech = m_presets->get_selected_preset().printer_technology();
-
-    // Only offer the host type selection for FFF, for SLA it's always the SL1 printer (at the moment)
-    if (tech == ptFFF) {
-        optgroup->append_single_option_line("host_type");
-    }
-
-    auto printhost_browse = [=](wxWindow* parent) {
-        add_scaled_button(parent, &m_printhost_browse_btn, "browse", _(L("Browse")) + " "+ dots, wxBU_LEFT | wxBU_EXACTFIT);
-        ScalableButton* btn = m_printhost_browse_btn;
-        btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-
-        auto sizer = new wxBoxSizer(wxHORIZONTAL);
-        sizer->Add(btn);
-
-        btn->Bind(wxEVT_BUTTON, [=](wxCommandEvent &e) {
-            BonjourDialog dialog(parent, tech);
-            if (dialog.show_and_lookup()) {
-                optgroup->set_value("print_host", std::move(dialog.get_selected()), true);
-                optgroup->get_field("print_host")->field_changed();
-            }
-        });
-
-        return sizer;
-    };
-
-    auto print_host_test = [this](wxWindow* parent) {
-        add_scaled_button(parent, &m_print_host_test_btn, "test", _(L("Test")), wxBU_LEFT | wxBU_EXACTFIT);
-        ScalableButton* btn = m_print_host_test_btn;
-        btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-        auto sizer = new wxBoxSizer(wxHORIZONTAL);
-        sizer->Add(btn);
-
-        btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent &e) {
-            std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
-            if (! host) {
-                const wxString text = _(L("Could not get a valid Printer Host reference"));
-                show_error(this, text);
-                return;
-            }
-            wxString msg;
-            if (host->test(msg)) {
-                show_info(this, host->get_test_ok_msg(), _(L("Success!")));
-            } else {
-                show_error(this, host->get_test_failed_msg(msg));
-            }
-        });
-
-        return sizer;
-    };
-
-    auto print_host_printers = [this](wxWindow* parent) {
-        add_scaled_button(parent, &m_printhost_slug_browse_btn, "browse", _(L("Refresh Printers")), wxBU_LEFT | wxBU_EXACTFIT);
-        ScalableButton* btn = m_printhost_slug_browse_btn;
-        btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-
-        auto sizer = new wxBoxSizer(wxHORIZONTAL);
-        sizer->Add(btn);
-        
-        btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent e) { update_printers(); });
-        return sizer;
-    };
-    
-    // Set a wider width for a better alignment
-    Option option = optgroup->get_option("print_host");
-    option.opt.width = Field::def_width_wider();
-    Line host_line = optgroup->create_single_option_line(option);
-    host_line.append_widget(printhost_browse);
-    host_line.append_widget(print_host_test);
-    optgroup->append_line(host_line);
-    option = optgroup->get_option("printhost_apikey");
-    option.opt.width = Field::def_width_wider();
-    optgroup->append_single_option_line(option);
-    
-    option = optgroup->get_option("printhost_slug");
-    option.opt.width = Field::def_width_wider();
-    Line slug_line = optgroup->create_single_option_line(option);
-    slug_line.append_widget(print_host_printers);
-    optgroup->append_line(slug_line);
-    
-    const auto ca_file_hint = _utf8(L("HTTPS CA file is optional. It is only needed if you use HTTPS with a self-signed certificate."));
-
-    if (Http::ca_file_supported()) {
-        option = optgroup->get_option("printhost_cafile");
-        option.opt.width = Field::def_width_wider();
-        Line cafile_line = optgroup->create_single_option_line(option);
-
-        auto printhost_cafile_browse = [this, optgroup] (wxWindow* parent) {
-            auto btn = new wxButton(parent, wxID_ANY, " " + _(L("Browse"))+" " +dots, wxDefaultPosition, wxDefaultSize, wxBU_LEFT);
-            btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-            btn->SetBitmap(create_scaled_bitmap("browse"));
-            auto sizer = new wxBoxSizer(wxHORIZONTAL);
-            sizer->Add(btn);
-
-            btn->Bind(wxEVT_BUTTON, [this, optgroup] (wxCommandEvent e) {
-                static const auto filemasks = _(L("Certificate files (*.crt, *.pem)|*.crt;*.pem|All files|*.*"));
-                wxFileDialog openFileDialog(this, _(L("Open CA certificate file")), "", "", filemasks, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-                if (openFileDialog.ShowModal() != wxID_CANCEL) {
-                    optgroup->set_value("printhost_cafile", std::move(openFileDialog.GetPath()), true);
-                    optgroup->get_field("printhost_cafile")->field_changed();
-                }
-            });
-
-            return sizer;
-        };
-
-        cafile_line.append_widget(printhost_cafile_browse);
-        optgroup->append_line(cafile_line);
-
-        Line cafile_hint { "", "" };
-        cafile_hint.full_width = 1;
-        cafile_hint.widget = [this, ca_file_hint](wxWindow* parent) {
-            auto txt = new wxStaticText(parent, wxID_ANY, ca_file_hint);
-            auto sizer = new wxBoxSizer(wxHORIZONTAL);
-            sizer->Add(txt);
-            return sizer;
-        };
-        optgroup->append_line(cafile_hint);
-    } else {
-        Line line { "", "" };
-        line.full_width = 1;
-
-        line.widget = [ca_file_hint] (wxWindow* parent) {
-            std::string info = _utf8(L("HTTPS CA File")) + ":\n\t" +
-                (boost::format(_utf8(L("On this system, %s uses HTTPS certificates from the system Certificate Store or Keychain."))) % SLIC3R_APP_NAME).str() +
-                "\n\t" + _utf8(L("To use a custom CA file, please import your CA file into Certificate Store / Keychain."));
-
-            auto txt = new wxStaticText(parent, wxID_ANY, from_u8((boost::format("%1%\n\n\t%2%") % info % ca_file_hint).str()));
-/*    % (boost::format(_utf8(L("HTTPS CA File:\n\
-    \tOn this system, %s uses HTTPS certificates from the system Certificate Store or Keychain.\n\
-    \tTo use a custom CA file, please import your CA file into Certificate Store / Keychain."))) % SLIC3R_APP_NAME).str()
-    % std::string(ca_file_hint.ToUTF8())).str()));
-*/            txt->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-            auto sizer = new wxBoxSizer(wxHORIZONTAL);
-            sizer->Add(txt, 1, wxEXPAND);
-            return sizer;
-        };
-
-        optgroup->append_line(line);
-    }
-}
-
-=======
->>>>>>> master
 void TabPrinter::build()
 {
     m_presets = &m_preset_bundle->printers;
@@ -2453,42 +2306,6 @@ void TabPrinter::build_sla()
     build_preset_description_line(optgroup.get());
 }
 
-<<<<<<< HEAD
-void TabPrinter::update_serial_ports()
-{
-    Field *field = get_field("serial_port");
-    Choice *choice = static_cast<Choice *>(field);
-    choice->set_values(Utils::scan_serial_ports());
-}
-
-void TabPrinter::update_printers()
-{
-    std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
-    
-    wxArrayString printers;
-    Field *rs = get_field("printhost_slug");
-    if (!host->get_printers(printers)) {
-        std::vector<std::string> slugs;
-        
-        Choice *choice = dynamic_cast<Choice *>(rs);
-        choice->set_values(slugs);
-
-        rs->disable();
-    } else {
-        std::vector<std::string> slugs;
-        for (int i = 0; i < printers.size(); i++) {
-            slugs.push_back(printers[i].ToStdString());
-        }
-                
-        Choice *choice = dynamic_cast<Choice *>(rs);
-        choice->set_values(slugs);
-        
-        rs->enable();
-    }
-}
-
-=======
->>>>>>> master
 void TabPrinter::extruders_count_changed(size_t extruders_count)
 {
     bool is_count_changed = false;
@@ -2855,13 +2672,18 @@ void TabPrinter::clear_pages()
     m_reset_to_filament_color = nullptr;
 }
 
-<<<<<<< HEAD
+/*
+ys_FIXME, lm_FIXME: Where to put this? Related to merging PR 4384 (Repetier integration).
     {
+        // This part was in original PS code. It was probably removed by mistake
+        // in the meantime.
         std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
         m_print_host_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
         m_printhost_browse_btn->Enable(host->has_auto_discovery());
+
+        // This was added in the PR
         m_printhost_slug_browse_btn->Enable(host->can_support_multiple_printers());
-    
+
         Field *rs = get_field("printhost_slug");
         if (host->can_support_multiple_printers()) {
             update_printers();
@@ -2870,12 +2692,13 @@ void TabPrinter::clear_pages()
             rs->disable();
         }
     }
-=======
+*/
+
+
 void TabPrinter::toggle_options()
 {
     if (!m_active_page || m_presets->get_edited_preset().printer_technology() == ptSLA)
         return;
->>>>>>> master
 
     bool have_multiple_extruders = m_extruders_count > 1;
     if (m_active_page->title() == "Custom G-code")

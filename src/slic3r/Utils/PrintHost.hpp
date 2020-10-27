@@ -10,6 +10,7 @@
 
 #include "Http.hpp"
 
+class wxArrayString;
 
 namespace Slic3r {
 
