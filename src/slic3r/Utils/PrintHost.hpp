@@ -46,7 +46,7 @@ public:
     virtual bool can_test() const = 0;
     virtual bool can_start_print() const = 0;
     // A print host usually does not support multiple printers, with the exception of Repetier server.
-    virtual bool can_support_multiple_printers() const { return false; }
+    virtual bool supports_multiple_printers() const { return false; }
     virtual std::string get_host() const = 0;
 
     // Support for Repetier server multiple groups & printers. Not supported by other print hosts.

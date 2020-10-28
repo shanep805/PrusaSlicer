@@ -32,10 +32,6 @@
 #include "BitmapCache.hpp"
 #include "BonjourDialog.hpp"
 
-using Slic3r::GUI::format_wxstr;
-
-//static const std::pair<unsigned int, unsigned int> THUMBNAIL_SIZE_3MF = { 256, 256 };
-
 namespace Slic3r {
 namespace GUI {
 
@@ -155,28 +151,6 @@ void PresetForPrinter::msw_rescale()
 //          PhysicalPrinterDialog
 //------------------------------------------
 
-/*
-ys_FIXME, lm_FIXME: Where to put this? Related to merging PR 4384 (Repetier integration).
-    {
-        // This part was in original PS code. It was probably removed by mistake
-        // in the meantime.
-        std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
-        m_print_host_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
-        m_printhost_browse_btn->Enable(host->has_auto_discovery());
-
-        // This was added in the PR
-        m_printhost_port_browse_btn->Enable(host->can_support_multiple_printers());
-
-        Field *rs = get_field("printhost_port");
-        if (host->can_support_multiple_printers()) {
-            update_printers();
-            rs->enable();
-        } else {
-            rs->disable();
-        }
-    }
-*/
-
 PhysicalPrinterDialog::PhysicalPrinterDialog(wxString printer_name) : 
     DPIDialog(NULL, wxID_ANY, _L("Physical Printer"), wxDefaultPosition, wxSize(45 * wxGetApp().em_unit(), -1), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
     m_printer("", wxGetApp().preset_bundle->physical_printers.default_config())
@@ -293,7 +267,7 @@ void PhysicalPrinterDialog::update_printers()
 void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgroup)
 {
     m_optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
-        if (opt_key == "printhost_authorization_type")
+        if (opt_key == "host_type" || opt_key == "printhost_authorization_type")
             this->update();
     };
 
@@ -438,6 +412,14 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     }
 
     m_optgroup->activate();
+
+    // Always fill in the "printhost_port" combo box from the config and select it.
+    {
+        Choice* choice = dynamic_cast<Choice*>(m_optgroup->get_field("printhost_port"));
+        choice->set_values({ m_config->opt_string("printhost_port") });
+        choice->set_selection();
+    }
+
     update();
 }
 
@@ -447,11 +429,14 @@ void PhysicalPrinterDialog::update()
 
     const PrinterTechnology tech = Preset::printer_technology(*m_config);
     // Only offer the host type selection for FFF, for SLA it's always the SL1 printer (at the moment)
+    bool supports_multiple_printers = false;
     if (tech == ptFFF) {
         m_optgroup->show_field("host_type");
         m_optgroup->hide_field("printhost_authorization_type");
         for (const std::string& opt_key : std::vector<std::string>{ "printhost_user", "printhost_password" })
             m_optgroup->hide_field(opt_key);
+        const auto opt = m_config->option<ConfigOptionEnum<PrintHostType>>("host_type");
+        supports_multiple_printers = opt && opt->value == htRepetier;
     }
     else {
         m_optgroup->set_value("host_type", int(PrintHostType::htOctoPrint), false);
@@ -466,6 +451,8 @@ void PhysicalPrinterDialog::update()
             m_optgroup->show_field(opt_key, auth_type == AuthorizationType::atUserPassword);
     }
 
+    m_optgroup->show_field("printhost_port", supports_multiple_printers);
+    m_printhost_port_browse_btn->Show(supports_multiple_printers);    
     this->Layout();
 }
 

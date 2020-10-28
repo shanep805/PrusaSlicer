@@ -251,9 +251,13 @@ bool Repetier::get_printers(wxArrayString& printers) const
             if (error)
                 throw HostNetworkError(*error);
 
-            BOOST_FOREACH(boost::property_tree::ptree::value_type &v, ptree.get_child("data.")) {
-                const auto port = v.second.get<std::string>("port");
-                printers.push_back(Slic3r::GUI::from_u8(port));
+            try {
+                BOOST_FOREACH(boost::property_tree::ptree::value_type &v, ptree.get_child("data.")) {
+                    const auto port = v.second.get<std::string>("slug");
+                    printers.push_back(Slic3r::GUI::from_u8(port));
+                }
+            } catch (const std::exception &err) {
+                throw HostNetworkError(GUI::format(_L("Enumeration of host printers failed.\nMessage body: \"%1%\"\nError: \"%2%\""), body, err.what()));
             }
         })
         .perform_sync();
