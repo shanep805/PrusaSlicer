@@ -1335,7 +1335,7 @@ const std::vector<std::string>& PhysicalPrinter::printer_options()
             "print_host",
             "printhost_apikey",
             "printhost_cafile",
-            "printhost_slug",
+            "printhost_port",
             "printhost_authorization_type",
             // HTTP digest authentization (RFC 2617)
             "printhost_user",
@@ -1380,7 +1380,7 @@ bool PhysicalPrinter::has_empty_config() const
     return  config.opt_string("print_host"        ).empty() && 
             config.opt_string("printhost_apikey"  ).empty() && 
             config.opt_string("printhost_cafile"  ).empty() && 
-            config.opt_string("printhost_slug"    ).empty() &&
+            config.opt_string("printhost_port"    ).empty() &&
             config.opt_string("printhost_user"    ).empty() && 
             config.opt_string("printhost_password").empty();
 }

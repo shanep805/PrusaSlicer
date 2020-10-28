@@ -5300,12 +5300,14 @@ void Plater::reslice_SLA_until_step(SLAPrintObjectStep step, const ModelObject &
 
 void Plater::send_gcode()
 {
-    if (p->model.objects.empty()) { return; }
-
     // if physical_printer is selected, send gcode for this printer
     DynamicPrintConfig* physical_printer_config = wxGetApp().preset_bundle->physical_printers.get_selected_printer_config();
-    PrintHostJob upload_job(physical_printer_config ? physical_printer_config : p->config);
-    if (upload_job.empty()) { return; }
+    if (! physical_printer_config || p->model.objects.empty())
+        return;
+
+    PrintHostJob upload_job(physical_printer_config);
+    if (upload_job.empty())
+        return;
 
     // Obtain default output path
     fs::path default_output_file;
@@ -5323,15 +5325,18 @@ void Plater::send_gcode()
     }
     default_output_file = fs::path(Slic3r::fold_utf8_to_ascii(default_output_file.string()));
 
+    // Repetier specific: Query the server for the list of file groups.
     wxArrayString groups;
-    upload_job.printhost->get_groups(groups);
+    {
+        wxBusyCursor wait;
+        upload_job.printhost->get_groups(groups);
+    }
     
     PrintHostSendDialog dlg(default_output_file, upload_job.printhost->can_start_print(), groups);
     if (dlg.ShowModal() == wxID_OK) {
         upload_job.upload_data.upload_path = dlg.filename();
         upload_job.upload_data.start_print = dlg.start_print();
         upload_job.upload_data.group       = dlg.group();
-
         p->export_gcode(fs::path(), false, std::move(upload_job));
     }
 }

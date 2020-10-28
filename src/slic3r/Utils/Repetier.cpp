@@ -30,7 +30,7 @@ Repetier::Repetier(DynamicPrintConfig *config) :
     host(config->opt_string("print_host")),
     apikey(config->opt_string("printhost_apikey")),
     cafile(config->opt_string("printhost_cafile")),
-    slug(config->opt_string("printhost_slug"))
+    port(config->opt_string("printhost_port"))
 {}
 
 const char* Repetier::get_name() const { return "Repetier"; }
@@ -107,7 +107,7 @@ bool Repetier::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Error
 
     bool res = true;
 
-    auto url = make_url((boost::format("printer/model/%1%") % slug).str());
+    auto url = make_url((boost::format("printer/model/%1%") % port).str());
 
     BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Uploading file %2% at %3%, filename: %4%, path: %5%, print: %6%, group: %7%")
         % name
@@ -180,7 +180,7 @@ bool Repetier::get_groups(wxArrayString& groups) const
     bool res = true;
     
     const char *name = get_name();
-    auto url = make_url((boost::format("printer/api/%1%") % slug).str());
+    auto url = make_url((boost::format("printer/api/%1%") % port).str());
 
     BOOST_LOG_TRIVIAL(info) << boost::format("%1%: Get groups at: %2%") % name % url;
 
@@ -252,8 +252,8 @@ bool Repetier::get_printers(wxArrayString& printers) const
                 throw HostNetworkError(*error);
 
             BOOST_FOREACH(boost::property_tree::ptree::value_type &v, ptree.get_child("data.")) {
-                const auto slug = v.second.get<std::string>("slug");
-                printers.push_back(Slic3r::GUI::from_u8(slug));
+                const auto port = v.second.get<std::string>("port");
+                printers.push_back(Slic3r::GUI::from_u8(port));
             }
         })
         .perform_sync();

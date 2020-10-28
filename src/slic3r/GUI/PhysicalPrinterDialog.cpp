@@ -165,9 +165,9 @@ ys_FIXME, lm_FIXME: Where to put this? Related to merging PR 4384 (Repetier inte
         m_printhost_browse_btn->Enable(host->has_auto_discovery());
 
         // This was added in the PR
-        m_printhost_slug_browse_btn->Enable(host->can_support_multiple_printers());
+        m_printhost_port_browse_btn->Enable(host->can_support_multiple_printers());
 
-        Field *rs = get_field("printhost_slug");
+        Field *rs = get_field("printhost_port");
         if (host->can_support_multiple_printers()) {
             update_printers();
             rs->enable();
@@ -277,7 +277,7 @@ void PhysicalPrinterDialog::update_printers()
     std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
 
     wxArrayString printers;
-    Field *rs = m_optgroup->get_field("printhost_slug");
+    Field *rs = m_optgroup->get_field("printhost_port");
     try {
         if (! host->get_printers(printers))
             printers.clear();
@@ -349,9 +349,9 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     };
 
     auto print_host_printers = [this, create_sizer_with_btn](wxWindow* parent) {
-        //add_scaled_button(parent, &m_printhost_slug_browse_btn, "browse", _(L("Refresh Printers")), wxBU_LEFT | wxBU_EXACTFIT);
-        auto sizer = create_sizer_with_btn(parent, &m_printhost_slug_browse_btn, "browse", _(L("Refresh Printers")));
-        ScalableButton* btn = m_printhost_slug_browse_btn;
+        //add_scaled_button(parent, &m_printhost_port_browse_btn, "browse", _(L("Refresh Printers")), wxBU_LEFT | wxBU_EXACTFIT);
+        auto sizer = create_sizer_with_btn(parent, &m_printhost_port_browse_btn, "browse", _(L("Refresh Printers")));
+        ScalableButton* btn = m_printhost_port_browse_btn;
         btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
         btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent e) { update_printers(); });
         return sizer;
@@ -371,11 +371,11 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     option.opt.width = Field::def_width_wider();
     m_optgroup->append_single_option_line(option);
 
-    option = m_optgroup->get_option("printhost_slug");
+    option = m_optgroup->get_option("printhost_port");
     option.opt.width = Field::def_width_wider();
-    Line slug_line = m_optgroup->create_single_option_line(option);
-    slug_line.append_widget(print_host_printers);
-    m_optgroup->append_line(slug_line);
+    Line port_line = m_optgroup->create_single_option_line(option);
+    port_line.append_widget(print_host_printers);
+    m_optgroup->append_line(port_line);
 
     const auto ca_file_hint = _u8L("HTTPS CA file is optional. It is only needed if you use HTTPS with a self-signed certificate.");
 
